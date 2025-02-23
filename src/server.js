@@ -16,7 +16,7 @@ app.use("/", express.static("public"));
 
 app.use("/api", apiRouter);
 
-app.use("/img", express.static(path.join(__dirname, "../db/images")));
+app.use("/img", express.static(path.join(__dirname, "../db/datasets")));
 
 app.listen(port, () => {
     console.log(`Server started on port ${port}!`);

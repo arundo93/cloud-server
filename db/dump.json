@@ -1,0 +1,32 @@
+{
+	"folders": [
+		{
+			"foldername": "images",
+			"dataType": "images",
+			"filesCount": 7
+		},
+		{
+			"foldername": "test1",
+			"dataType": "",
+			"filesCount": 0
+		},
+		{
+			"foldername": "test2",
+			"dataType": "",
+			"filesCount": 0
+		}
+	],
+	"files": {
+		"test1": [],
+		"test2": [],
+		"images": [
+			"0001_t.png",
+			"0002_t.png",
+			"0003_t.png",
+			"0004_t.png",
+			"0005_t.png",
+			"0006_t.png",
+			"img1.png"
+		]
+	}
+}

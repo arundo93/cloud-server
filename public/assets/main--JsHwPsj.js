@@ -1,1 +1,0 @@
-import{j as e,c as r,A as t}from"./App-Bwn2yEY9.js";function n(){return e.jsx("div",{children:e.jsx("a",{href:"/images/",children:"Images"})})}r.createRoot(document.getElementById("root")).render(e.jsx(t,{children:e.jsx(n,{})}));
