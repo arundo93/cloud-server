@@ -4,6 +4,7 @@ import path from 'path'
 import db from "../entities/Database.js"
 import { datasetsFolder } from '../config/index.js';
 import { checkFileName, checkFolderName } from '../utils/checkFilename.js';
+import { YOLOv8lModel } from '../entities/YOLOModel.js';
 
 // Настройка multer
 const storage = multer.diskStorage({
@@ -113,7 +114,7 @@ apiRouter.delete("/:foldername/remove", (req, res) => {
     const filename = checkFileName(req.body.filename + "");
     const foldername = checkFolderName(req.params.foldername);
     if(!filename || !db.findFolder(foldername)){
-        return res.status(500).json({ success: false, message: "Файл не найден"});
+        return res.status(400).json({ success: false, message: "Файл не найден"});
     }
     db.removeFileFromFolder(foldername, filename).then((result) => {
         if(!!result.status){
@@ -129,7 +130,7 @@ apiRouter.post("/:foldername/rename", (req, res) => {
     const {filename, newName} = req.body;
     const foldername = checkFolderName(req.params.foldername);
     if(!filename || !newName){
-        return res.status(500).json({ success: false, message: "Пустой запрос"});
+        return res.status(400).json({ success: false, message: "Пустой запрос"});
     }
 
     db.renameFileInFolder(foldername, checkFileName(filename), checkFileName(newName)).then((result) => {
@@ -141,3 +142,17 @@ apiRouter.post("/:foldername/rename", (req, res) => {
         }
     });
 });
+
+apiRouter.post("/predict", (req, res) => {
+    const foldername = checkFolderName(req.body.foldername);
+    const filename = checkFileName(req.body.filename);
+    if(!db.findFileInFolder(foldername, filename)){
+        return res.status(400).json({ success: false, message: "Пустой запрос"});
+    }
+    YOLOv8lModel.detect(foldername, filename).then((result) => {
+        if(!result){
+            return res.status(500).json({ success: false, message: "Ошибка при распознавании объектов. Попробуйте снова"});
+        }
+        res.json(result);
+    })
+})

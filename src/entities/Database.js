@@ -66,6 +66,13 @@ class Database extends EventEmitter {
     return this.folders.filter((folder) => folder.foldername === foldername).length > 0;
   }
 
+  findFileInFolder(foldername, filename){
+    if(!this.findFolder(foldername)){
+      return false;
+    }
+    return this.files[foldername].includes(filename);
+  }
+
   getFolderContent(foldername){
     return this.files[foldername];
   }

@@ -17,7 +17,9 @@
 		}
 	],
 	"files": {
-		"test1": [],
+		"test1": [
+			"cars.jpg"
+		],
 		"test2": [],
 		"images": [
 			"0001_t.png",

@@ -1,10 +1,11 @@
-import path, { resolve } from 'node:path';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const dbFolder = resolve(__dirname, '../../db/');
-export const dbDumpFile = resolve(dbFolder, 'dump.json');
-export const imagesFolder = resolve(dbFolder, 'images');
-export const datasetsFolder = resolve(dbFolder, 'datasets');
+export const yolov8Url = path.resolve(__dirname, "../../db/yolov8l_web_model/model.json")
+export const dbFolder = path.resolve(__dirname, '../../db/');
+export const dbDumpFile = path.resolve(dbFolder, 'dump.json');
+export const imagesFolder = path.resolve(dbFolder, 'images');
+export const datasetsFolder = path.resolve(dbFolder, 'datasets');
