@@ -1,7 +1,7 @@
-import * as tf from "@tensorflow/tfjs-node";
+import tf from "@tensorflow/tfjs-node";
 import "@tensorflow/tfjs-backend-webgl"; // set backend to webgl
 import fs from "node:fs";
-import { datasetsFolder, yolov8Url } from "../config/index.js";
+import { datasetsFolder, yolov8Folder } from "../config/index.js";
 import path from "node:path";
 import { labels } from "./labels.js";
 
@@ -15,7 +15,30 @@ class model {
         this.loaded = false;
         
         tf.ready().then(async () => {
-            const yolov8 = await tf.loadGraphModel("file://" + yolov8Url);
+            // const yolov8 = await tf.loadGraphModel(`file://${path.resolve(yolov8Folder, "model.json")}`);
+            const yolov8 = await tf.loadGraphModel(path.resolve(yolov8Folder, "model.json"), {
+                fetchFunc: (input) => {
+                    return Promise.resolve({
+                        arrayBuffer: () => {
+                            return fs.promises.readFile(input);
+                        },
+                        text: () => {
+                            return fs.promises.readFile(input, {
+                                encoding: "utf-8"
+                            });
+                        },
+                        json: () => {
+                            return fs.promises.readFile(input, {
+                                encoding: "utf-8"
+                            }).then((text) => {
+                                return JSON.parse(text);
+                            });
+                        },
+                        status: 200,
+                        ok: true
+                    });
+                }
+            });
             const dummyInput = tf.ones(yolov8.inputs[0].shape);
             const warmupResults = yolov8.execute(dummyInput);
             this.model.net = yolov8;
@@ -31,6 +54,7 @@ class model {
 
     async preprocessImage(imageBuffer) {
         const [modelWidth, modelHeight] = this.model.inputShape.slice(1, 3);
+        console.log(modelWidth, modelHeight);
         // Декодируем изображение из буфера
         const img = tf.node.decodeImage(imageBuffer, 3); // 3 — количество каналов (RGB)
     
@@ -38,14 +62,23 @@ class model {
         const [h, w] = img.shape.slice(0, 2); // get source width and height
         const maxSize = Math.max(w, h); // get max size
     
+        // const imgPadded = img.pad([
+        //     [Math.floor((maxSize - h) / 2), Math.ceil((maxSize - h) / 2)], // padding y [top and bottom]
+        //     [Math.floor((maxSize - w) / 2), Math.ceil((maxSize - w) / 2)], // padding x [left and right]
+        //     [0, 0],
+        // ]);
+    
         const imgPadded = img.pad([
-            [Math.floor((maxSize - h) / 2), Math.ceil((maxSize - h) / 2)], // padding y [top and bottom]
-            [Math.floor((maxSize - w) / 2), Math.ceil((maxSize - w) / 2)], // padding x [left and right]
+            [0, maxSize - h], // padding y [top and bottom]
+            [0, maxSize - w], // padding x [left and right]
             [0, 0],
         ]);
     
-        const xRatio = maxSize / w; // update xRatio
-        const yRatio = maxSize / h; // update yRatio
+        // const xRatio = maxSize / w; // update xRatio
+        // const yRatio = maxSize / h; // update yRatio
+    
+        const xRatio = modelWidth / w; // update xRatio
+        const yRatio = modelHeight / h; // update yRatio
     
         const input = tf.tidy(() => {
             return tf.image
@@ -103,7 +136,7 @@ class model {
         tf.dispose([res, transRes, boxes, scores, classes, nms]); // clear memory
       
         tf.engine().endScope(); // end of scoping
-        return {boxes_data, scores_data, classes_data, ratio: [xRatio, yRatio]}
+        return {boxes_data, scores_data, classes_data, ratios: {xRatio, yRatio}}
     };
 }
 
