@@ -15,30 +15,30 @@ class model {
         this.loaded = false;
         
         tf.ready().then(async () => {
-            // const yolov8 = await tf.loadGraphModel(`file://${path.resolve(yolov8Folder, "model.json")}`);
-            const yolov8 = await tf.loadGraphModel(path.resolve(yolov8Folder, "model.json"), {
-                fetchFunc: (input) => {
-                    return Promise.resolve({
-                        arrayBuffer: () => {
-                            return fs.promises.readFile(input);
-                        },
-                        text: () => {
-                            return fs.promises.readFile(input, {
-                                encoding: "utf-8"
-                            });
-                        },
-                        json: () => {
-                            return fs.promises.readFile(input, {
-                                encoding: "utf-8"
-                            }).then((text) => {
-                                return JSON.parse(text);
-                            });
-                        },
-                        status: 200,
-                        ok: true
-                    });
-                }
-            });
+            const yolov8 = await tf.loadGraphModel(`file://${path.resolve(yolov8Folder, "model.json")}`);
+            // const yolov8 = await tf.loadGraphModel(path.resolve(yolov8Folder, "model.json"), {
+            //     fetchFunc: (input) => {
+            //         return Promise.resolve({
+            //             arrayBuffer: () => {
+            //                 return fs.promises.readFile(input);
+            //             },
+            //             text: () => {
+            //                 return fs.promises.readFile(input, {
+            //                     encoding: "utf-8"
+            //                 });
+            //             },
+            //             json: () => {
+            //                 return fs.promises.readFile(input, {
+            //                     encoding: "utf-8"
+            //                 }).then((text) => {
+            //                     return JSON.parse(text);
+            //                 });
+            //             },
+            //             status: 200,
+            //             ok: true
+            //         });
+            //     }
+            // });
             const dummyInput = tf.ones(yolov8.inputs[0].shape);
             const warmupResults = yolov8.execute(dummyInput);
             this.model.net = yolov8;
@@ -77,8 +77,8 @@ class model {
         // const xRatio = maxSize / w; // update xRatio
         // const yRatio = maxSize / h; // update yRatio
     
-        const xRatio = modelWidth / w; // update xRatio
-        const yRatio = modelHeight / h; // update yRatio
+        const xRatio = modelWidth / maxSize; // update xRatio
+        const yRatio = modelHeight / maxSize; // update yRatio
     
         const input = tf.tidy(() => {
             return tf.image
@@ -87,7 +87,7 @@ class model {
                 .expandDims(0); // add batch
         });
     
-        return { input, xRatio, yRatio };
+        return { input, xRatio, yRatio, shape: {w, h}};
     }
 
     async detect(foldername, filename){
@@ -98,7 +98,7 @@ class model {
 
         const filePath = path.join(datasetsFolder, foldername, filename);
         const imageBuffer = await fs.promises.readFile(filePath)
-        const { input, xRatio, yRatio } = await this.preprocessImage(imageBuffer); // preprocess image
+        const { input, xRatio, yRatio, shape } = await this.preprocessImage(imageBuffer); // preprocess image
         console.log(input);
 
         const res = this.model.net.execute(input); // inference model
@@ -136,7 +136,14 @@ class model {
         tf.dispose([res, transRes, boxes, scores, classes, nms]); // clear memory
       
         tf.engine().endScope(); // end of scoping
-        return {boxes_data, scores_data, classes_data, ratios: {xRatio, yRatio}}
+        // console.log(classes_data);
+        return {
+            boxes_data: Array.from(boxes_data), 
+            scores_data: Array.from(scores_data), 
+            classes_data: Array.from(classes_data).map((cls) => ({class: labels[cls], idx: cls})), 
+            ratios: {xRatio, yRatio}, 
+            shape
+        }
     };
 }
 
