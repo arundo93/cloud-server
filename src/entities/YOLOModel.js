@@ -15,6 +15,9 @@ class model {
         this.loaded = false;
         
         tf.ready().then(async () => {
+            // await this.checkGPU();
+            await tf.setBackend('tensorflow');
+            console.log('Текущий backend:', tf.getBackend());
             const yolov8 = await tf.loadGraphModel(`file://${path.resolve(yolov8Folder, "model.json")}`);
             // const yolov8 = await tf.loadGraphModel(path.resolve(yolov8Folder, "model.json"), {
             //     fetchFunc: (input) => {
@@ -48,13 +51,23 @@ class model {
         });
     }
 
+    async checkGPU() {
+        const numGPUs = tf.env().getNumber('WEBGL_NUM_DEVICES');
+        console.log(`Количество доступных GPU: ${numGPUs}`);
+        if (numGPUs > 0) {
+            console.log('GPU доступен для использования!');
+        } else {
+            console.log('GPU не обнаружен или недоступен.');
+        }
+    }
+
     isLoaded(){
         return this.loaded;
     }
 
     async preprocessImage(imageBuffer) {
         const [modelWidth, modelHeight] = this.model.inputShape.slice(1, 3);
-        console.log(modelWidth, modelHeight);
+        // console.log(modelWidth, modelHeight);
         // Декодируем изображение из буфера
         const img = tf.node.decodeImage(imageBuffer, 3); // 3 — количество каналов (RGB)
     
@@ -99,9 +112,11 @@ class model {
         const filePath = path.join(datasetsFolder, foldername, filename);
         const imageBuffer = await fs.promises.readFile(filePath)
         const { input, xRatio, yRatio, shape } = await this.preprocessImage(imageBuffer); // preprocess image
-        console.log(input);
+        // console.log(input);
 
+        console.time("Inference time");
         const res = this.model.net.execute(input); // inference model
+        console.timeEnd("Inference time");
         const transRes = res.transpose([0, 2, 1]); // transpose result [b, det, n] => [b, n, det]
         const boxes = tf.tidy(() => {
             const w = transRes.slice([0, 0, 2], [-1, -1, 1]); // get width

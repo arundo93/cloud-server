@@ -80,6 +80,12 @@ class Database extends EventEmitter {
   addFileToFolder(foldername, filename){
     if(!!this.files[foldername]){
       this.files[foldername] = insertToArr(this.files[foldername], filename);
+      for(let i = 0; i < this.folders.length; i++){
+        if(this.folders[i].foldername === foldername){
+          this.folders[i].filesCount += 1;
+          break;
+        }
+      }
       this.emit('changed');
     }
   }
@@ -98,6 +104,12 @@ class Database extends EventEmitter {
                     return res({ status: 500, message: `Ошибка при удалении файла: ${err.message}` });
                 }
                 this.files[foldername] = this.files[foldername].filter((file) => file !== filename);
+                for(let i = 0; i < this.folders.length; i++){
+                  if(this.folders[i].foldername === foldername){
+                    this.folders[i].filesCount -= 1;
+                    break;
+                  }
+                }
                 this.emit('changed');
                 res({ status: undefined, message: `Файл "${filename}" успешно удален.` });
             });
