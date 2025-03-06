@@ -23,9 +23,6 @@ class Database extends EventEmitter {
       if (typeof dump.folders === 'object') {
         this.folders = Array.from(dump.folders);
       }
-      if(typeof dump.files === 'object'){
-        this.files = {...dump.files};
-      }
     });
   }
 
@@ -44,14 +41,10 @@ class Database extends EventEmitter {
           {
             foldername,
             dataType: "",
-            filesCount: 0
+            files: [],
+            predictions: {},
           },
           (a, b) => (a.foldername > b.foldername ? "more" : (a.foldername === b.foldername ? "equal" : "less")));
-        this.folders.push({
-          foldername,
-          dataType: "",
-          filesCount: 0
-        });
         this.emit('changed');
         res({ status: undefined, message: `Папка "${foldername}" успешно создана.` });
       });
@@ -59,7 +52,14 @@ class Database extends EventEmitter {
   }
 
   getFolders(){
-    return this.folders;
+    return this.folders.map((folder) => {
+      const {foldername, dataType} = folder;
+      return {
+        foldername,
+        dataType,
+        filesCount: folder.files.length,
+      }
+    });
   }
 
   findFolder(foldername){
@@ -67,32 +67,33 @@ class Database extends EventEmitter {
   }
 
   findFileInFolder(foldername, filename){
-    if(!this.findFolder(foldername)){
+    const [folder] = this.folders.filter((folder) => folder.foldername === foldername);
+    if(!folder){
       return false;
     }
-    return this.files[foldername].includes(filename);
+    return folder.files.includes(filename);
   }
 
   getFolderContent(foldername){
-    return this.files[foldername];
+    const [folder] = this.folders.filter((folder) => folder.foldername === foldername);
+    if(!folder){
+      return [];
+    }
+    return folder.files;
   }
 
   addFileToFolder(foldername, filename){
-    if(!!this.files[foldername]){
-      this.files[foldername] = insertToArr(this.files[foldername], filename);
-      for(let i = 0; i < this.folders.length; i++){
-        if(this.folders[i].foldername === foldername){
-          this.folders[i].filesCount += 1;
-          break;
-        }
-      }
+    const [folder] = this.folders.filter((folder) => folder.foldername === foldername);
+    if(!!folder){
+      folder.files = insertToArr(folder.files, filename);
       this.emit('changed');
     }
   }
 
   removeFileFromFolder(foldername, filename){
     return new Promise((res, rej) => {
-      if(!!this.files[foldername].includes(filename)){
+      const [folder] = this.folders.filter((folder) => folder.foldername === foldername);
+      if(!!folder && folder.files.includes(filename)){
         const filePath = path.join(datasetsFolder, foldername, filename);
         fs.access(filePath, fs.constants.F_OK, (err) => {
             if (err) {
@@ -103,13 +104,7 @@ class Database extends EventEmitter {
                 if (err) {
                     return res({ status: 500, message: `Ошибка при удалении файла: ${err.message}` });
                 }
-                this.files[foldername] = this.files[foldername].filter((file) => file !== filename);
-                for(let i = 0; i < this.folders.length; i++){
-                  if(this.folders[i].foldername === foldername){
-                    this.folders[i].filesCount -= 1;
-                    break;
-                  }
-                }
+                folder.files = folder.files.filter((file) => file !== filename);
                 this.emit('changed');
                 res({ status: undefined, message: `Файл "${filename}" успешно удален.` });
             });
@@ -123,7 +118,8 @@ class Database extends EventEmitter {
 
   renameFileInFolder(foldername, filename, newName){
     return new Promise((res, rej) => {
-      if(!!this.files[foldername].includes(filename)){
+      const [folder] = this.folders.filter((folder) => folder.foldername === foldername);
+      if(!!folder && folder.files.includes(filename)){
         const filePath = path.join(datasetsFolder, foldername, filename);
         const newFilePath = path.join(datasetsFolder, foldername, newName);
         // Проверяем, существует ли файл
@@ -135,7 +131,7 @@ class Database extends EventEmitter {
                 if (err) {
                     return res({ status: 500, message: `Ошибка при удалении файла: ${err.message}` });
                 }
-                this.files[foldername] = insertToArr(this.files[foldername].filter((file) => file !== filename), newName);
+                folder.files = insertToArr(folder.files.filter((file) => file !== filename), newName);
                 this.emit('changed');
                 res({ status: undefined, message: `Файл "${filename}" успешно переименован в ${newName}.` });
             });
@@ -147,10 +143,22 @@ class Database extends EventEmitter {
     });
   }
 
+  addFilePrediction(foldername, filename, prediction){
+    const [folder] = this.folders.filter((folder) => folder.foldername === foldername);
+    if(!!folder && folder.files.includes(filename)){
+      folder.predictions[filename] = JSON.stringify(prediction);
+      this.emit('changed');
+    }
+  }
+
+  getPredictionToFile(foldername, filename){
+    const [folder] = this.folders.filter((folder) => folder.foldername === foldername);
+    return folder.predictions[filename];
+  }
+
   toJSON() {
     return {
       folders: this.folders,
-      files: this.files,
     };
   }
 }

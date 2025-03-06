@@ -149,10 +149,17 @@ apiRouter.post("/predict", (req, res) => {
     if(!db.findFileInFolder(foldername, filename)){
         return res.status(400).json({ success: false, message: "Пустой запрос"});
     }
-    YOLOv8lModel.detect(foldername, filename).then((result) => {
-        if(!result){
-            return res.status(500).json({ success: false, message: "Ошибка при распознавании объектов. Попробуйте снова"});
-        }
-        res.json(result);
-    })
+    const savedPrediction = db.getPredictionToFile(foldername, filename);
+    if(!!savedPrediction){
+        res.json(JSON.parse(savedPrediction));
+    }
+    else{
+        YOLOv8lModel.detect(foldername, filename).then((result) => {
+            if(!result){
+                return res.status(500).json({ success: false, message: "Ошибка при распознавании объектов. Попробуйте снова"});
+            }
+            db.addFilePrediction(foldername, filename, result);
+            res.json(result);
+        });
+    }
 })
