@@ -105,6 +105,7 @@ class Database extends EventEmitter {
                     return res({ status: 500, message: `Ошибка при удалении файла: ${err.message}` });
                 }
                 folder.files = folder.files.filter((file) => file !== filename);
+                folder.predictions[filename] = undefined;
                 this.emit('changed');
                 res({ status: undefined, message: `Файл "${filename}" успешно удален.` });
             });
@@ -132,6 +133,8 @@ class Database extends EventEmitter {
                     return res({ status: 500, message: `Ошибка при удалении файла: ${err.message}` });
                 }
                 folder.files = insertToArr(folder.files.filter((file) => file !== filename), newName);
+                folder.predictions[newName] = folder.predictions[filename];
+                folder.predictions[filename] = undefined;
                 this.emit('changed');
                 res({ status: undefined, message: `Файл "${filename}" успешно переименован в ${newName}.` });
             });
