@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Фоновый круг -->
+  <circle cx="100" cy="100" r="90" fill="none" />
+  <!-- Линии сетки для символизации анализа изображения -->
+  <line x1="10" y1="100" x2="190" y2="100" stroke="#cccccc" stroke-width="2" />
+  <line x1="100" y1="10" x2="100" y2="190" stroke="#cccccc" stroke-width="2" />
+  <!-- Прямоугольник, символизирующий bounding box -->
+  <rect x="50" y="50" width="120" height="90" stroke="#00e7b2" stroke-width="10" fill="none" />
+  <!-- Метка класса объекта -->
+  <rect x="55" y="25" width="30" height="30" fill="#00e7b2" rx="2" ry="2" />
+  <text x="90" y="40" font-size="22" fill="#00e7b2" font-family="Arial, sans-serif">Object</text>
+</svg>
